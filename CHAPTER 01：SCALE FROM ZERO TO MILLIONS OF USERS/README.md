@@ -10,7 +10,7 @@
 
 ## 系統架構
 
-![單一 Web Server 系統架構](./figure1.jpg)
+![單一 Web Server 系統架構](./assets/figure1.jpg)
 
 圖中的 Web Browser 或 Mobile App 先向 DNS 查詢網域名稱，取得本章假設的 IP 位址 `15.125.23.214`，之後再連線至同一台 Web Server。Web Browser 請求網站內容，Mobile App 則通常透過 API 存取服務。
 
@@ -191,11 +191,11 @@ Domain → DNS → IP → TCP Connection → HTTP Request
 
 ## 執行最小模擬程式
 
-本章的 [`single_server_simulation.py`](./single_server_simulation.py) 使用 Python 標準函式庫模擬完整流程，不需要安裝額外套件。
+本章的 [`single_server_simulation.py`](./src/single_server_simulation.py) 使用 Python 標準函式庫模擬完整流程，不需要安裝額外套件。
 
 ```powershell
 cd "CHAPTER 01：SCALE FROM ZERO TO MILLIONS OF USERS"
-python single_server_simulation.py
+python src/single_server_simulation.py
 ```
 
 程式中的 `15.125.23.214` 是系統架構所假設的公開 IP。因為這個 IP 並未配置在開發電腦上，實際的本機 TCP 連線會映射到 `127.0.0.1:8080`。
@@ -207,3 +207,13 @@ python single_server_simulation.py
 3. Browser 發送 `GET /index.html`。
 4. Web Server 回傳 `200 OK` 與 HTML。
 5. Browser 顯示收到的狀態和 HTML。
+
+## 延伸閱讀
+
+- [術語表](./glossary.md)
+- [DNS 筆記](./notes/01-dns.md)
+- [TCP 筆記](./notes/02-tcp.md)
+- [HTTP 筆記](./notes/03-http.md)
+- [網域註冊與 IP 對應](./questions/01-domain-registration.md)
+- [`www` 與 `api` 子網域的用途](./questions/02-www-and-api.md)
+- [單一伺服器架構決策](./decisions/001-single-server.md)
