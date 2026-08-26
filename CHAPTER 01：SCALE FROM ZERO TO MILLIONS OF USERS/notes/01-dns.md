@@ -16,6 +16,6 @@ DNS 是讓 Client 查詢網域名稱相關紀錄的分散式命名系統，常�
 
 ## 程式對應位置
 
-- [`DOMAIN` 與 `PUBLIC_IP`](../src/single_server_simulation.py)：定義模擬的網域與公開 IP。
-- [`resolve_domain()`](../src/single_server_simulation.py)：檢查網域並回傳固定 IP，模擬 DNS Lookup。
-- [`run_browser()`](../src/single_server_simulation.py)：在建立 TCP 連線前呼叫 DNS 模擬。
+- [`DOMAIN` 與 `PUBLIC_IP`](../src/stage01_single_server.py)：定義模擬的網域與公開 IP。
+- [`resolve_domain()`](../src/stage01_single_server.py)：檢查網域並回傳固定 IP，模擬 DNS Lookup。
+- [`run_browser()`](../src/stage01_single_server.py)：在建立 TCP 連線前呼叫 DNS 模擬。

@@ -1,5 +1,21 @@
 # Chapter 01：從零開始——單一伺服器架構
 
+## 架構演進
+
+```text
+Stage 01：單一 Web Server
+    ↓
+Stage 02：Load Balancer + 多台 Web Server
+    ↓
+Stage 03：Database Primary + Replicas（讀寫分離）
+```
+
+| Stage | 程式 | 架構決策 | 狀態 |
+| --- | --- | --- | --- |
+| 01 | [`stage01_single_server.py`](./src/stage01_single_server.py) | [`001-single-server.md`](./decisions/001-single-server.md) | 已完成 |
+| 02 | [`stage02_load_balancer.py`](./src/stage02_load_balancer.py) | [`002-load-balancer.md`](./decisions/002-load-balancer.md) | 骨架 |
+| 03 | [`stage03_database_replication.py`](./src/stage03_database_replication.py) | [`003-database-replication.md`](./decisions/003-database-replication.md) | 骨架 |
+
 ## 目標
 
 本章先從最簡單的系統架構開始：所有使用者請求都由一台 Web Server 處理。
@@ -191,11 +207,11 @@ Domain → DNS → IP → TCP Connection → HTTP Request
 
 ## 執行最小模擬程式
 
-本章的 [`single_server_simulation.py`](./src/single_server_simulation.py) 使用 Python 標準函式庫模擬完整流程，不需要安裝額外套件。
+本章的 [`stage01_single_server.py`](./src/stage01_single_server.py) 使用 Python 標準函式庫模擬完整流程，不需要安裝額外套件。
 
 ```powershell
 cd "CHAPTER 01：SCALE FROM ZERO TO MILLIONS OF USERS"
-python src/single_server_simulation.py
+python src/stage01_single_server.py
 ```
 
 程式中的 `15.125.23.214` 是系統架構所假設的公開 IP。因為這個 IP 並未配置在開發電腦上，實際的本機 TCP 連線會映射到 `127.0.0.1:8080`。

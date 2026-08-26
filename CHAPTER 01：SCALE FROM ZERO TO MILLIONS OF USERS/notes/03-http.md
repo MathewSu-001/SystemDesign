@@ -17,7 +17,7 @@ HTTP 是 Client 以 Request 請求資源、Server 以 Response 回傳結果的�
 
 ## 程式對應位置
 
-- [`run_browser()`](../src/single_server_simulation.py)：組合並發送 HTTP Request，再解析 HTTP Response。
-- [`run_web_server()`](../src/single_server_simulation.py)：接收並解析 Request Line，取得 Method 與 Path。
-- [`build_response()`](../src/single_server_simulation.py)：根據 Path 建立 Status Line、Headers 與 HTML Body。
-- [`sendall()` 與 `recv()`](../src/single_server_simulation.py)：透過 TCP 傳送與接收 HTTP 訊息。
+- [`run_browser()`](../src/stage01_single_server.py)：組合並發送 HTTP Request，再解析 HTTP Response。
+- [`run_web_server()`](../src/stage01_single_server.py)：接收並解析 Request Line，取得 Method 與 Path。
+- [`build_response()`](../src/stage01_single_server.py)：根據 Path 建立 Status Line、Headers 與 HTML Body。
+- [`sendall()` 與 `recv()`](../src/stage01_single_server.py)：透過 TCP 傳送與接收 HTTP 訊息。
