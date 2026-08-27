@@ -13,7 +13,7 @@ Stage 03：Database Primary + Replicas（讀寫分離）
 | Stage | 程式 | 架構決策 | 狀態 |
 | --- | --- | --- | --- |
 | 01 | [`stage01_single_server.py`](./src/stage01_single_server.py) | [`001-single-server.md`](./decisions/001-single-server.md) | 已完成 |
-| 02 | [`stage02_load_balancer.py`](./src/stage02_load_balancer.py) | [`002-load-balancer.md`](./decisions/002-load-balancer.md) | 骨架 |
+| 02 | [`stage02_load_balancer.py`](./src/stage02_load_balancer.py) | [`002-load-balancer.md`](./decisions/002-load-balancer.md) | 已完成 |
 | 03 | [`stage03_database_replication.py`](./src/stage03_database_replication.py) | [`003-database-replication.md`](./decisions/003-database-replication.md) | 骨架 |
 
 ## 目標
@@ -224,12 +224,23 @@ python src/stage01_single_server.py
 4. Web Server 回傳 `200 OK` 與 HTML。
 5. Browser 顯示收到的狀態和 HTML。
 
+## 執行 Load Balancer 模擬程式
+
+```powershell
+python src/stage02_load_balancer.py
+```
+
+Stage 02 會啟動三台本機 Web Server 與一個 Load Balancer，連續發出六個 Request。前三次使用 Round Robin 分配至 Server 1、2、3；接著模擬 Server 2 離線，確認後續 Request 只會送往通過 Health Check 的 Server 1 與 Server 3。完整設計與預期輸出請參考 [002 Load Balancer 架構決策](./decisions/002-load-balancer.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
 - [DNS 筆記](./notes/01-dns.md)
 - [TCP 筆記](./notes/02-tcp.md)
 - [HTTP 筆記](./notes/03-http.md)
+- [Load Balancer 筆記](./notes/04-load-balancer.md)
 - [網域註冊與 IP 對應](./questions/01-domain-registration.md)
 - [`www` 與 `api` 子網域的用途](./questions/02-www-and-api.md)
+- [除了 Round Robin，Load Balancer 如何分配伺服器？](./questions/03-load-balancing-algorithms.md)
 - [單一伺服器架構決策](./decisions/001-single-server.md)
+- [Load Balancer 架構決策](./decisions/002-load-balancer.md)

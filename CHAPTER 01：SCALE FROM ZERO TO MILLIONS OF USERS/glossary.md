@@ -13,6 +13,8 @@
 | CNAME Record | 將一個名稱設定為另一個名稱之別名的 DNS Record。 |
 | TTL | DNS 紀錄可以被快取的時間長度。 |
 | IP Address | 用來識別網路介面並協助路由封包的位址。 |
+| Public IP | 可以在公開網際網路上路由的 IP Address；Stage 02 的 Client 透過 Load Balancer 的 Public IP 進入系統。 |
+| Private IP | 用於私有網路內部通訊、不直接在公開網際網路上路由的 IP Address。 |
 | Port | 用來區分同一台機器上不同網路服務的數字。 |
 | TCP | 提供可靠、有順序 Byte Stream 的傳輸層協定。 |
 | TCP Three-Way Handshake | TCP 使用 SYN、SYN-ACK、ACK 建立連線的過程。 |
@@ -28,5 +30,14 @@
 | API | 讓不同軟體交換資料或呼叫功能的介面。 |
 | JSON | 常用於 Web API 的結構化文字資料格式。 |
 | localhost | 代表本機的主機名稱，通常對應到 `127.0.0.1`。 |
+| Load Balancer | 接收 Client 流量，並將 Request 分配給健康 Backend 的元件。 |
+| Backend | 位於 Load Balancer 後方，實際處理 Request 的 Server。 |
+| Server Pool / Target Group | 註冊在 Load Balancer 中、可供選擇的一組 Backends。不同產品使用的名稱可能不同。 |
+| Reverse Proxy | 代表後方 Servers 接收 Client Request、轉送 Request，再將 Response 傳回 Client 的代理元件。 |
+| Health Check | Load Balancer 用來判斷 Backend 是否能繼續接收流量的檢查。 |
+| Round Robin | 依序輪流選擇健康 Backend 的負載分配方式。 |
+| Horizontal Scaling | 透過增加 Server 數量擴充系統的整體處理能力。 |
+| Single Point of Failure | 某個單一元件故障時，會導致整體服務無法運作的設計風險。 |
+| Stateless Server | 不將 Client 專屬狀態只保存在單一 Server 本機，因此 Request 可以交由不同 Server 處理。 |
 
 [回到 Chapter 01](./README.md)
