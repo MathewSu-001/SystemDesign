@@ -1,4 +1,4 @@
-# Chapter 01：從零開始——單一伺服器架構
+# Chapter 01：從單一伺服器擴充到負載平衡
 
 ## 架構演進
 
@@ -18,32 +18,67 @@ Stage 03：Database Primary + Replicas（讀寫分離）
 
 ## 目標
 
-本章先從最簡單的系統架構開始：所有使用者請求都由一台 Web Server 處理。
+本章從最簡單的單一 Web Server 開始，再加入 Load Balancer 與多台 Web Servers，觀察系統如何逐步水平擴充。
 
-使用者在瀏覽器輸入網域名稱後，會先透過 DNS 取得伺服器的 IP 位址 `15.125.23.214`，接著向該伺服器發送 HTTP 請求，最後取得 HTML 並顯示網頁。
+Stage 01 的目標是理解使用者輸入網域後，如何經過 DNS、TCP 與 HTTP，直接從單一 Web Server 取得 HTML。
 
-本章只討論靜態 HTML，不包含資料庫、快取、負載平衡器或多台伺服器。
+Stage 02 的目標是理解 DNS 如何改為指向 Load Balancer 的 Public IP，以及 Load Balancer 如何透過 Health Check 與 Round Robin，將 Request 轉送給具有 Private IP 的健康 Web Server。這個階段也會區分 Client 到 Load Balancer，以及 Load Balancer 到 Web Server 的兩段 TCP 連線。
+
+目前兩個階段都只處理靜態 HTML，尚不加入 Database、Cache 或 CDN。
 
 ## 系統架構
+
+### Stage 01：單一 Web Server
 
 ![單一 Web Server 系統架構](./assets/figure1.jpg)
 
 圖中的 Web Browser 或 Mobile App 先向 DNS 查詢網域名稱，取得本章假設的 IP 位址 `15.125.23.214`，之後再連線至同一台 Web Server。Web Browser 請求網站內容，Mobile App 則通常透過 API 存取服務。
 
+```text
+Client -> DNS -> Single Web Server Public IP
+```
+
+此時 Web Server 同時是公開流量入口與 Request 處理者，因此它的容量限制和故障都會直接影響整個服務。
+
+### Stage 02：Load Balancer + 多台 Web Servers
+
+![使用者透過公開 IP 連線至 Load Balancer](./assets/figure2.jpg)
+
+圖 2 在使用者與 Web Servers 之間加入 Load Balancer。DNS 不再回傳某一台 Web Server 的 IP，而是回傳 Load Balancer 的 Public IP。使用者只會連線 Load Balancer，不會取得或直接連線後方 Server 的 Private IP。
+
+```text
+Client -> DNS -> Load Balancer Public IP
+                     -> Web Server 1 Private IP
+                     -> Web Server 2 Private IP
+```
+
+圖中的 `mywebsite.com`、`88.88.88.1`、`10.0.0.1` 與 `10.0.0.2` 是架構示意值；本章程式使用的對應值如下：
+
+```text
+www.mysite.com -> Load Balancer 15.125.23.214:80
+Load Balancer  -> Web Server 1 10.0.1.11:80
+               -> Web Server 2 10.0.1.12:80
+               -> Web Server 3 10.0.1.13:80
+```
+
+圖 1 到圖 2 的關鍵演進，是將「公開流量入口」從單一 Web Server 移到 Load Balancer，並讓後方 Web 層可以增加或移除 Server。
+
 ## 完整運作流程
+
+Stage 01 與 Stage 02 的 Client 操作相同：使用者輸入網域並等待頁面回傳。架構演進發生在 DNS 指向、TCP 連線終點與 Server 選擇方式；以下沿著同一個 Request 流程比較兩個階段。
 
 ### 1. 使用者輸入網址
 
 假設使用者在瀏覽器輸入：
 
 ```text
-http://example.com/index.html
+http://www.mysite.com/index.html
 ```
 
 瀏覽器會解析出：
 
 - Protocol：`http`
-- Domain：`example.com`
+- Domain：`www.mysite.com`
 - Path：`/index.html`
 - Port：`80`（HTTP 預設值）
 
@@ -52,7 +87,7 @@ http://example.com/index.html
 瀏覽器需要先將容易閱讀的網域名稱轉換成電腦可連線的 IP 位址：
 
 ```text
-example.com → 15.125.23.214
+www.mysite.com → 15.125.23.214
 ```
 
 瀏覽器與作業系統會先檢查 DNS 快取。如果沒有找到紀錄，才會向 DNS Resolver 查詢。DNS 回應會包含 IP 位址與 TTL；TTL 決定這筆結果可以被快取多久。
@@ -63,6 +98,15 @@ example.com → 15.125.23.214
 15.125.23.214
 ```
 
+兩個階段使用相同的網域與示意 Public IP，但 IP 所代表的元件不同：
+
+```text
+Stage 01：www.mysite.com -> 單一 Web Server 15.125.23.214
+Stage 02：www.mysite.com -> Load Balancer   15.125.23.214
+```
+
+進入 Stage 02 後，DNS 不會把 `10.0.1.11`、`10.0.1.12` 或 `10.0.1.13` 等 Web Server Private IP 回傳給 Client。
+
 ### 3. 建立 TCP 連線
 
 取得 IP 後，瀏覽器會連線至：
@@ -71,14 +115,23 @@ example.com → 15.125.23.214
 15.125.23.214:80
 ```
 
+Stage 01 中，這條 TCP 連線直接終止在單一 Web Server。Stage 02 中，第一段 TCP 連線改為終止在 Load Balancer：
+
+```text
+Stage 01：Client -> Web Server Public IP
+Stage 02：Client -> Load Balancer Public IP
+```
+
 HTTP/1.1 使用 TCP 傳輸。傳送 HTTP Request 前，Client 與 Server 會先完成 TCP 三向交握：
 
 ```text
-Browser                         Web Server
+Browser                    Connection Destination
    │ -------- SYN -----------------> │
    │ <------- SYN + ACK ------------ │
    │ -------- ACK -----------------> │
 ```
+
+Stage 01 的 Connection Destination 是 Web Server；Stage 02 的第一段連線目的地則是 Load Balancer。
 
 TCP 負責可靠傳輸，確保資料依序抵達，並在封包遺失時重新傳送。
 
@@ -88,10 +141,12 @@ TCP 負責可靠傳輸，確保資料依序抵達，並在封包遺失時重新�
 
 ```http
 GET /index.html HTTP/1.1
-Host: example.com
+Host: www.mysite.com
 Accept: text/html
 Connection: keep-alive
 ```
+
+Stage 01 由 Web Server 直接接收這個 Request；Stage 02 則先由 Load Balancer 接收。對 Client 而言，HTTP Request 不需要因後方增加多台 Servers 而改變。
 
 其中：
 
@@ -101,7 +156,26 @@ Connection: keep-alive
 - `Accept` 表示 Client 希望收到 HTML。
 - `Connection: keep-alive` 表示完成這次請求後，可暫時保留 TCP 連線供後續請求使用。
 
-### 5. Web Server 處理請求
+### 5. 選擇並由 Web Server 處理請求
+
+Stage 01 沒有選擇步驟，唯一的 Web Server 直接處理 Request。
+
+Stage 02 的 Load Balancer 會先以 `/health` 排除不健康的 Backend，再使用 Round Robin 選擇一台健康 Server：
+
+```text
+Request 1 -> Web Server 1
+Request 2 -> Web Server 2
+Request 3 -> Web Server 3
+```
+
+假設選到 Web Server 2，Load Balancer 會建立第二段 TCP 連線，透過 Private Network 轉送 Request：
+
+```text
+第一段：Client        -> Load Balancer 15.125.23.214:80
+第二段：Load Balancer -> Web Server 2  10.0.1.12:80
+```
+
+Public IP 與 Private IP 不會合併成一個位址。它們分別是兩段連線的目的地。
 
 Web Server 在 Port `80` 監聽連線。收到資料後會：
 
@@ -121,6 +195,15 @@ GET /index.html  → index.html
 ```
 
 ### 6. 回傳 HTTP Response
+
+Stage 01 中，Web Server 將 Response 直接傳回 Client；Stage 02 則由選中的 Web Server 先傳回 Load Balancer，再由 Load Balancer 傳回 Client：
+
+```text
+Stage 01：Web Server -> Client
+Stage 02：Web Server -> Load Balancer -> Client
+```
+
+Stage 02 的 Client 不需要知道實際由哪台 Web Server 處理。模擬程式會在 Response 加入 `X-Served-By` Header，純粹用來觀察 Round Robin 的分配結果。
 
 找到檔案後，Server 回傳狀態碼、Headers 與 HTML：
 
@@ -164,7 +247,7 @@ Content-Type: text/html; charset=utf-8
 
 如果 HTML 還引用 CSS、JavaScript 或圖片，瀏覽器會為每個資源繼續發送 HTTP Request。本章暫時只回傳單一 HTML，因此不模擬額外資源。
 
-## 單一伺服器的責任
+## Stage 01：單一伺服器的責任
 
 這個架構中，唯一的 Web Server 同時負責：
 
@@ -176,7 +259,7 @@ Content-Type: text/html; charset=utf-8
 
 它的優點是架構簡單、容易理解與部署；缺點是伺服器一旦故障，整個服務就無法使用，而且 CPU、記憶體、網路頻寬與連線數都受限於單一機器。
 
-## Chapter 01 模擬範圍
+## Stage 01 模擬範圍
 
 第一版程式預計模擬：
 
