@@ -39,5 +39,14 @@
 | Horizontal Scaling | 透過增加 Server 數量擴充系統的整體處理能力。 |
 | Single Point of Failure | 某個單一元件故障時，會導致整體服務無法運作的設計風險。 |
 | Stateless Server | 不將 Client 專屬狀態只保存在單一 Server 本機，因此 Request 可以交由不同 Server 處理。 |
+| Database | 用來持久化、組織與查詢應用程式資料的系統。 |
+| Primary Database | 接受資料新增、修改與刪除，並將變更複製給 Replicas 的主要資料庫節點。 |
+| Database Replica | 接收 Primary 資料變更的副本節點，常用來分散讀取流量。 |
+| Database Replication | 將一個資料庫節點的資料變更複製到其他節點的機制。 |
+| Read/Write Splitting | 將讀取送往 Replicas、將資料變更送往 Primary 的路由方式。 |
+| Replication Lag | Primary 已完成變更，但 Replica 尚未套用該變更的時間差或進度差。 |
+| Eventual Consistency | 各副本可能短暫不一致，但在沒有新變更且同步正常時，最終會達到一致。 |
+| Stale Read | 從落後的 Replica 讀到尚未包含最新變更的舊資料。 |
+| Read-after-write Consistency | 同一個 Client 完成寫入後，後續讀取能立即看見該次寫入的保證。 |
 
 [回到 Chapter 01](./README.md)
