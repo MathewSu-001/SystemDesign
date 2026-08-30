@@ -315,6 +315,14 @@ python src/stage02_load_balancer.py
 
 Stage 02 會啟動三台本機 Web Server 與一個 Load Balancer，連續發出六個 Request。前三次使用 Round Robin 分配至 Server 1、2、3；接著模擬 Server 2 離線，確認後續 Request 只會送往通過 Health Check 的 Server 1 與 Server 3。完整設計與預期輸出請參考 [002 Load Balancer 架構決策](./decisions/002-load-balancer.md)。
 
+## 執行 Database Replication 模擬程式
+
+```powershell
+python src/stage03_database_replication.py
+```
+
+Stage 03 保留三台 Web Server 與 Load Balancer，並加入一台 Database Primary 和兩台 Replicas。程式會先寫入 Primary，再分別於複製前後讀取 Replica，以觀察 replication lag 造成的「找不到資料」或「讀到舊值」。完整流程請參考 [003 Database Replication 架構決策](./decisions/003-database-replication.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
@@ -327,3 +335,4 @@ Stage 02 會啟動三台本機 Web Server 與一個 Load Balancer，連續發出
 - [除了 Round Robin，Load Balancer 如何分配伺服器？](./questions/03-load-balancing-algorithms.md)
 - [單一伺服器架構決策](./decisions/001-single-server.md)
 - [Load Balancer 架構決策](./decisions/002-load-balancer.md)
+- [Database Replication 架構決策](./decisions/003-database-replication.md)
