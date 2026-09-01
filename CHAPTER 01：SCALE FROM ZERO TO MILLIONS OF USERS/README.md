@@ -1,4 +1,4 @@
-# Chapter 01：從單一伺服器擴充到負載平衡
+# Chapter 01：從單一伺服器擴充到資料庫與快取
 
 ## 架構演進
 
@@ -8,23 +8,26 @@ Stage 01：單一 Web Server
 Stage 02：Load Balancer + 多台 Web Server
     ↓
 Stage 03：Database Primary + Replicas（讀寫分離）
+    ↓
+Stage 04：Shared Cache（Cache-Aside）
 ```
 
 | Stage | 程式 | 架構決策 | 狀態 |
 | --- | --- | --- | --- |
 | 01 | [`stage01_single_server.py`](./src/stage01_single_server.py) | [`001-single-server.md`](./decisions/001-single-server.md) | 已完成 |
 | 02 | [`stage02_load_balancer.py`](./src/stage02_load_balancer.py) | [`002-load-balancer.md`](./decisions/002-load-balancer.md) | 已完成 |
-| 03 | [`stage03_database_replication.py`](./src/stage03_database_replication.py) | [`003-database-replication.md`](./decisions/003-database-replication.md) | 骨架 |
+| 03 | [`stage03_database_replication.py`](./src/stage03_database_replication.py) | [`003-database-replication.md`](./decisions/003-database-replication.md) | 已完成 |
+| 04 | [`stage04_cache.py`](./src/stage04_cache.py) | [`004-cache.md`](./decisions/004-cache.md) | 已完成 |
 
 ## 目標
 
-本章從最簡單的單一 Web Server 開始，再加入 Load Balancer 與多台 Web Servers，觀察系統如何逐步水平擴充。
+本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication 與 Shared Cache，觀察系統如何擴充並理解一致性取捨。
 
 Stage 01 的目標是理解使用者輸入網域後，如何經過 DNS、TCP 與 HTTP，直接從單一 Web Server 取得 HTML。
 
 Stage 02 的目標是理解 DNS 如何改為指向 Load Balancer 的 Public IP，以及 Load Balancer 如何透過 Health Check 與 Round Robin，將 Request 轉送給具有 Private IP 的健康 Web Server。這個階段也會區分 Client 到 Load Balancer，以及 Load Balancer 到 Web Server 的兩段 TCP 連線。
 
-目前兩個階段都只處理靜態 HTML，尚不加入 Database、Cache 或 CDN。
+Stage 03 加入 Database Primary、Replicas 與讀寫分離，Stage 04 再以 Cache-Aside 降低重複的 Database 讀取，並觀察 Cache TTL 與 Replication Lag 對舊資料的影響。
 
 ## 系統架構
 
@@ -323,6 +326,14 @@ python src/stage03_database_replication.py
 
 Stage 03 保留三台 Web Server 與 Load Balancer，並加入一台 Database Primary 和兩台 Replicas。程式會先寫入 Primary，再分別於複製前後讀取 Replica，以觀察 replication lag 造成的「找不到資料」或「讀到舊值」。完整流程請參考 [003 Database Replication 架構決策](./decisions/003-database-replication.md)。
 
+## 執行 Shared Cache 模擬程式
+
+```powershell
+python src/stage04_cache.py
+```
+
+Stage 04 使用所有 Web Servers 共用的 Cache，依序展示 Cache Miss、Cache Set、Cache Hit、寫入後 Invalidation，以及 TTL 到期。模擬也會刻意讓落後的 Replica 將舊資料放回 Cache，以觀察 Cache 如何延長 Replication Lag 的影響。完整流程請參考 [004 Shared Cache 架構決策](./decisions/004-cache.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
@@ -341,3 +352,4 @@ Stage 03 保留三台 Web Server 與 Load Balancer，並加入一台 Database Pr
 - [單一伺服器架構決策](./decisions/001-single-server.md)
 - [Load Balancer 架構決策](./decisions/002-load-balancer.md)
 - [Database Replication 架構決策](./decisions/003-database-replication.md)
+- [Shared Cache 架構決策](./decisions/004-cache.md)

@@ -48,5 +48,12 @@
 | Eventual Consistency | 各副本可能短暫不一致，但在沒有新變更且同步正常時，最終會達到一致。 |
 | Stale Read | 從落後的 Replica 讀到尚未包含最新變更的舊資料。 |
 | Read-after-write Consistency | 同一個 Client 完成寫入後，後續讀取能立即看見該次寫入的保證。 |
+| Cache | 將常用資料暫存在較快的儲存層，減少重複計算或 Database 查詢的元件。 |
+| Shared Cache | 由多台 Web Servers 共用的獨立 Cache，例如 Redis 或 Memcached。 |
+| Cache-Aside | Application 先查 Cache，Miss 時查 Database 並回填 Cache，寫入後使 Cache 失效的策略。 |
+| Cache Hit | 查詢的 Key 存在於 Cache 且尚未過期，可以直接取得資料。 |
+| Cache Miss | 查詢的 Key 不存在或已過期，Application 必須從其他資料來源取得資料。 |
+| Cache Invalidation | 在來源資料改變後刪除或更新對應 Cache，避免繼續回傳舊資料。 |
+| TTL | Time To Live，一筆 Cache 資料在自動過期前可以存活的時間。 |
 
 [回到 Chapter 01](./README.md)
