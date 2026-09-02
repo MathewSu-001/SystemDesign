@@ -55,5 +55,13 @@
 | Cache Miss | 查詢的 Key 不存在或已過期，Application 必須從其他資料來源取得資料。 |
 | Cache Invalidation | 在來源資料改變後刪除或更新對應 Cache，避免繼續回傳舊資料。 |
 | TTL | Time To Live，一筆 Cache 資料在自動過期前可以存活的時間。 |
+| CDN | Content Delivery Network，透過分散在不同地區的 Edge Servers 快取與傳遞內容，降低 Client 延遲及 Origin 負載。 |
+| Edge Server | CDN 中靠近 Client，負責接收 Request、快取並回傳內容的 Server。 |
+| Edge Location | 部署一組 CDN Edge Servers 的網路節點或地理據點。 |
+| Origin | CDN 在 Cache Miss、Expired 或 Bypass 時轉送 Request 的上游 HTTP 服務。 |
+| Static Content | 通常在部署或上傳時產生，相同 URL 對不同 Clients 多半回傳相同結果的內容。 |
+| Dynamic Content | 根據使用者、時間、Request 或目前資料即時產生的內容。 |
+| Cache Key | Cache 用來識別不同內容的 Key；CDN 常依 Host、Path、Query String 與部分 Headers 組成。 |
+| Cache Bypass | CDN 不使用且通常不保存這次 Request 的 Cache，而是直接將 Request 轉送至 Origin。 |
 
 [回到 Chapter 01](./README.md)

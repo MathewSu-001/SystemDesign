@@ -1,4 +1,4 @@
-# Chapter 01：從單一伺服器擴充到資料庫與快取
+# Chapter 01：從單一伺服器擴充到 CDN
 
 ## 架構演進
 
@@ -10,6 +10,8 @@ Stage 02：Load Balancer + 多台 Web Server
 Stage 03：Database Primary + Replicas（讀寫分離）
     ↓
 Stage 04：Shared Cache（Cache-Aside）
+    ↓
+Stage 05：CDN Edge Cache
 ```
 
 | Stage | 程式 | 架構決策 | 狀態 |
@@ -18,16 +20,19 @@ Stage 04：Shared Cache（Cache-Aside）
 | 02 | [`stage02_load_balancer.py`](./src/stage02_load_balancer.py) | [`002-load-balancer.md`](./decisions/002-load-balancer.md) | 已完成 |
 | 03 | [`stage03_database_replication.py`](./src/stage03_database_replication.py) | [`003-database-replication.md`](./decisions/003-database-replication.md) | 已完成 |
 | 04 | [`stage04_cache.py`](./src/stage04_cache.py) | [`004-cache.md`](./decisions/004-cache.md) | 已完成 |
+| 05 | [`stage05_cdn.py`](./src/stage05_cdn.py) | [`005-cdn.md`](./decisions/005-cdn.md) | 已完成 |
 
 ## 目標
 
-本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication 與 Shared Cache，觀察系統如何擴充並理解一致性取捨。
+本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache 與 CDN，觀察系統如何擴充並理解一致性取捨。
 
 Stage 01 的目標是理解使用者輸入網域後，如何經過 DNS、TCP 與 HTTP，直接從單一 Web Server 取得 HTML。
 
 Stage 02 的目標是理解 DNS 如何改為指向 Load Balancer 的 Public IP，以及 Load Balancer 如何透過 Health Check 與 Round Robin，將 Request 轉送給具有 Private IP 的健康 Web Server。這個階段也會區分 Client 到 Load Balancer，以及 Load Balancer 到 Web Server 的兩段 TCP 連線。
 
 Stage 03 加入 Database Primary、Replicas 與讀寫分離，Stage 04 再以 Cache-Aside 降低重複的 Database 讀取，並觀察 Cache TTL 與 Replication Lag 對舊資料的影響。
+
+Stage 05 在 Browser 與 Origin 之間加入 CDN Edge Cache，讓靜態內容的 Cache Hit 不必進入 Load Balancer 或 Web Server，並區分 CDN Cache、Shared Application Cache、Origin 與動態 Request Bypass。
 
 ## 系統架構
 
@@ -334,6 +339,14 @@ python src/stage04_cache.py
 
 Stage 04 使用所有 Web Servers 共用的 Cache，依序展示 Cache Miss、Cache Set、Cache Hit、寫入後 Invalidation，以及 TTL 到期。模擬也會刻意讓落後的 Replica 將舊資料放回 Cache，以觀察 Cache 如何延長 Replication Lag 的影響。完整流程請參考 [004 Shared Cache 架構決策](./decisions/004-cache.md)。
 
+## 執行 CDN 模擬程式
+
+```powershell
+python src/stage05_cdn.py
+```
+
+Stage 05 會啟動 CDN Edge、Origin Load Balancer、三台 Web Servers、Shared Application Cache 與 Database Replication。程式會展示靜態內容的 CDN Miss、Hit、Expired，動態 Request 的 Bypass，以及 Origin 更新後 CDN 在 TTL 到期前仍回傳舊版本。完整流程請參考 [005 CDN 架構決策](./decisions/005-cdn.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
@@ -364,3 +377,4 @@ Stage 04 使用所有 Web Servers 共用的 Cache，依序展示 Cache Miss、Ca
 - [Load Balancer 架構決策](./decisions/002-load-balancer.md)
 - [Database Replication 架構決策](./decisions/003-database-replication.md)
 - [Shared Cache 架構決策](./decisions/004-cache.md)
+- [CDN 架構決策](./decisions/005-cdn.md)
