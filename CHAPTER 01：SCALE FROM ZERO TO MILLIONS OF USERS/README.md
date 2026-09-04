@@ -1,4 +1,4 @@
-# Chapter 01：從單一伺服器擴充到 CDN
+# Chapter 01：從單一伺服器擴充到無狀態 Web Tier
 
 ## 架構演進
 
@@ -12,6 +12,8 @@ Stage 03：Database Primary + Replicas（讀寫分離）
 Stage 04：Shared Cache（Cache-Aside）
     ↓
 Stage 05：CDN Edge Cache
+    ↓
+Stage 06：Stateless Web Tier + Shared Session Store
 ```
 
 | Stage | 程式 | 架構決策 | 狀態 |
@@ -21,10 +23,11 @@ Stage 05：CDN Edge Cache
 | 03 | [`stage03_database_replication.py`](./src/stage03_database_replication.py) | [`003-database-replication.md`](./decisions/003-database-replication.md) | 已完成 |
 | 04 | [`stage04_cache.py`](./src/stage04_cache.py) | [`004-cache.md`](./decisions/004-cache.md) | 已完成 |
 | 05 | [`stage05_cdn.py`](./src/stage05_cdn.py) | [`005-cdn.md`](./decisions/005-cdn.md) | 已完成 |
+| 06 | [`stage06_stateless_web_tier.py`](./src/stage06_stateless_web_tier.py) | [`006-stateless-web-tier.md`](./decisions/006-stateless-web-tier.md) | 已完成 |
 
 ## 目標
 
-本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache 與 CDN，觀察系統如何擴充並理解一致性取捨。
+本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache、CDN 與 Shared Session Store，觀察系統如何擴充並理解一致性與狀態管理的取捨。
 
 Stage 01 的目標是理解使用者輸入網域後，如何經過 DNS、TCP 與 HTTP，直接從單一 Web Server 取得 HTML。
 
@@ -33,6 +36,8 @@ Stage 02 的目標是理解 DNS 如何改為指向 Load Balancer 的 Public IP�
 Stage 03 加入 Database Primary、Replicas 與讀寫分離，Stage 04 再以 Cache-Aside 降低重複的 Database 讀取，並觀察 Cache TTL 與 Replication Lag 對舊資料的影響。
 
 Stage 05 在 Browser 與 Origin 之間加入 CDN Edge Cache，讓靜態內容的 Cache Hit 不必進入 Load Balancer 或 Web Server，並區分 CDN Cache、Shared Application Cache、Origin 與動態 Request Bypass。
+
+Stage 06 將登入 Session 放入所有 Web Servers 共用的 Session Store，Browser 只透過 Cookie 攜帶隨機 Session ID。登入與後續 Request 即使分別由不同 Web Servers 處理，仍能取得同一個登入狀態，讓 Web Tier 不需要依賴 Sticky Session。
 
 ## 系統架構
 
@@ -347,6 +352,14 @@ python src/stage05_cdn.py
 
 Stage 05 會啟動 CDN Edge、Origin Load Balancer、三台 Web Servers、Shared Application Cache 與 Database Replication。程式會展示靜態內容的 CDN Miss、Hit、Expired，動態 Request 的 Bypass，以及 Origin 更新後 CDN 在 TTL 到期前仍回傳舊版本。完整流程請參考 [005 CDN 架構決策](./decisions/005-cdn.md)。
 
+## 執行 Stateless Web Tier 模擬程式
+
+```powershell
+python src/stage06_stateless_web_tier.py
+```
+
+Stage 06 保留 Stage 05 的完整架構並加入 Shared Session Store。程式會由 Web Server 1 處理 `POST /login` 並回傳 Session Cookie，再刻意讓 Web Server 2 與 Web Server 3 處理後續 `GET /me`，確認不同 Web Servers 都能從共用 Session Store 辨識同一位使用者；未帶 Cookie 的 Browser 則會收到 `401 Unauthorized`。完整流程請參考 [006 Stateless Web Tier 架構決策](./decisions/006-stateless-web-tier.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
@@ -360,6 +373,8 @@ Stage 05 會啟動 CDN Edge、Origin Load Balancer、三台 Web Servers、Shared
 - [Cache-Aside 筆記](./notes/08-cache-aside.md)
 - [CDN 筆記](./notes/09-cdn.md)
 - [CDN Caching 筆記](./notes/10-cdn-caching.md)
+- [Stateless Web Tier 筆記](./notes/11-stateless-web-tier.md)
+- [Cookie 與 Server-Side Session 筆記](./notes/12-cookie-and-server-side-session.md)
 - [網域註冊與 IP 對應](./questions/01-domain-registration.md)
 - [`www` 與 `api` 子網域的用途](./questions/02-www-and-api.md)
 - [除了 Round Robin，Load Balancer 如何分配伺服器？](./questions/03-load-balancing-algorithms.md)
@@ -373,8 +388,13 @@ Stage 05 會啟動 CDN Edge、Origin Load Balancer、三台 Web Servers、Shared
 - [CDN Edge Server、Web Server 與 Origin 分別是什麼？](./questions/11-cdn-edge-web-server-and-origin.md)
 - [靜態與動態內容有什麼不同？CDN Bypass 又是什麼？](./questions/12-static-dynamic-and-cdn-bypass.md)
 - [Origin 更新後，CDN 如何取得新內容？](./questions/13-cdn-origin-content-update.md)
+- [Session Cookie 和廣告 Cookie 有什麼不同？](./questions/14-session-cookie-vs-advertising-cookie.md)
+- [Endpoint 是什麼？](./questions/15-what-is-an-endpoint.md)
+- [Session Store、Database 與 Cache 是同一個東西嗎？](./questions/16-session-store-vs-database-and-cache.md)
+- [Session 應該保存什麼，容量會不會用完？](./questions/17-what-belongs-in-a-session.md)
 - [單一伺服器架構決策](./decisions/001-single-server.md)
 - [Load Balancer 架構決策](./decisions/002-load-balancer.md)
 - [Database Replication 架構決策](./decisions/003-database-replication.md)
 - [Shared Cache 架構決策](./decisions/004-cache.md)
 - [CDN 架構決策](./decisions/005-cdn.md)
+- [Stateless Web Tier 架構決策](./decisions/006-stateless-web-tier.md)

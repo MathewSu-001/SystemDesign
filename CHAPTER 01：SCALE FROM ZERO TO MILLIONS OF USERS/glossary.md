@@ -26,8 +26,13 @@
 | HTTP Status Code | 表示請求處理結果的三位數代碼，例如 `200`、`404`、`500`。 |
 | HTTP Header | 描述 Request 或 Response 額外資訊的欄位。 |
 | HTTP Body | HTTP 訊息實際承載的內容，例如 HTML 或 JSON。 |
+| Cookie | Browser 依 Domain、Path 與其他規則保存，並在後續 HTTP Request 中傳回 Server 的小型資料。 |
+| Session Cookie | 未指定持久保存期限、通常在 Browser Session 結束後移除的 Cookie；也常被泛指用來攜帶 Session ID 的登入 Cookie。 |
+| Set-Cookie | Server 要求 Browser 建立或更新 Cookie 的 HTTP Response Header。 |
+| Cookie Attributes | 控制 Cookie 保存、傳送與存取方式的屬性，例如 `HttpOnly`、`Secure`、`SameSite`、`Path` 與 `Max-Age`。 |
 | HTML | 描述網頁內容與結構的標記語言。 |
 | API | 讓不同軟體交換資料或呼叫功能的介面。 |
+| Endpoint | Client 可以呼叫的具體服務入口；HTTP API 常以 Method 加 Path 表示，例如 `POST /login`。 |
 | JSON | 常用於 Web API 的結構化文字資料格式。 |
 | localhost | 代表本機的主機名稱，通常對應到 `127.0.0.1`。 |
 | Load Balancer | 接收 Client 流量，並將 Request 分配給健康 Backend 的元件。 |
@@ -38,7 +43,14 @@
 | Round Robin | 依序輪流選擇健康 Backend 的負載分配方式。 |
 | Horizontal Scaling | 透過增加 Server 數量擴充系統的整體處理能力。 |
 | Single Point of Failure | 某個單一元件故障時，會導致整體服務無法運作的設計風險。 |
+| Web Tier | 位於 Load Balancer 後方、負責處理 HTTP Request 與應用邏輯的一組 Web Servers。 |
+| Stateful Server | 將跨 Request 的 Client 專屬狀態保存在單一 Server 本機，因此後續 Request 可能必須回到相同 Server。 |
 | Stateless Server | 不將 Client 專屬狀態只保存在單一 Server 本機，因此 Request 可以交由不同 Server 處理。 |
+| Session | Server 用來連結同一使用者多次 Request 的短期狀態，例如登入身分與到期時間。 |
+| Session ID | Browser 與 Server 用來定位 Session 的不透明隨機識別碼，應難以猜測且幾乎不重複。 |
+| Session Store | 讓多台 Web Servers 共用 Session 的儲存系統，可以由 Redis、Database 或其他 Key-Value Store 實作。 |
+| Session Expiration | Session 超過有效期限後失效，並可由 Session Store 清除的機制。 |
+| Sticky Session | Load Balancer 盡量將同一使用者的 Request 分配給相同 Backend 的路由方式。 |
 | Database | 用來持久化、組織與查詢應用程式資料的系統。 |
 | Primary Database | 接受資料新增、修改與刪除，並將變更複製給 Replicas 的主要資料庫節點。 |
 | Database Replica | 接收 Primary 資料變更的副本節點，常用來分散讀取流量。 |
