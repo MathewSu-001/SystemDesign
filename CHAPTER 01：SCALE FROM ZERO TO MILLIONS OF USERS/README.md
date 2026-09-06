@@ -1,4 +1,4 @@
-# Chapter 01：從單一伺服器擴充到無狀態 Web Tier
+# Chapter 01：從單一伺服器擴充到多資料中心
 
 ## 架構演進
 
@@ -14,6 +14,8 @@ Stage 04：Shared Cache（Cache-Aside）
 Stage 05：CDN Edge Cache
     ↓
 Stage 06：Stateless Web Tier + Shared Session Store
+    ↓
+Stage 07：Multi-Data Center + GeoDNS Failover
 ```
 
 | Stage | 程式 | 架構決策 | 狀態 |
@@ -24,10 +26,11 @@ Stage 06：Stateless Web Tier + Shared Session Store
 | 04 | [`stage04_cache.py`](./src/stage04_cache.py) | [`004-cache.md`](./decisions/004-cache.md) | 已完成 |
 | 05 | [`stage05_cdn.py`](./src/stage05_cdn.py) | [`005-cdn.md`](./decisions/005-cdn.md) | 已完成 |
 | 06 | [`stage06_stateless_web_tier.py`](./src/stage06_stateless_web_tier.py) | [`006-stateless-web-tier.md`](./decisions/006-stateless-web-tier.md) | 已完成 |
+| 07 | [`stage07_multi_data_center.py`](./src/stage07_multi_data_center.py) | [`007-multi-data-center.md`](./decisions/007-multi-data-center.md) | 已完成 |
 
 ## 目標
 
-本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache、CDN 與 Shared Session Store，觀察系統如何擴充並理解一致性與狀態管理的取捨。
+本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache、CDN、Shared Session Store 與多資料中心，觀察系統如何擴充並理解一致性、狀態管理及跨區域 Failover 的取捨。
 
 Stage 01 的目標是理解使用者輸入網域後，如何經過 DNS、TCP 與 HTTP，直接從單一 Web Server 取得 HTML。
 
@@ -38,6 +41,8 @@ Stage 03 加入 Database Primary、Replicas 與讀寫分離，Stage 04 再以 Ca
 Stage 05 在 Browser 與 Origin 之間加入 CDN Edge Cache，讓靜態內容的 Cache Hit 不必進入 Load Balancer 或 Web Server，並區分 CDN Cache、Shared Application Cache、Origin 與動態 Request Bypass。
 
 Stage 06 將登入 Session 放入所有 Web Servers 共用的 Session Store，Browser 只透過 Cookie 攜帶隨機 Session ID。登入與後續 Request 即使分別由不同 Web Servers 處理，仍能取得同一個登入狀態，讓 Web Tier 不需要依賴 Sticky Session。
+
+Stage 07 建立 Taipei 與 Virginia 兩個 Data Centers，使用 GeoDNS 依 Client Region 回傳偏好的健康 Data Center IP，再由該 Data Center 的 Load Balancer 選擇 Web Server。程式也會展示 Browser DNS Cache 尚未到期時仍連向故障 Data Center，以及 TTL 到期後重新查詢並完成 Failover。
 
 ## 系統架構
 
@@ -360,6 +365,14 @@ python src/stage06_stateless_web_tier.py
 
 Stage 06 保留 Stage 05 的完整架構並加入 Shared Session Store。程式會由 Web Server 1 處理 `POST /login` 並回傳 Session Cookie，再刻意讓 Web Server 2 與 Web Server 3 處理後續 `GET /me`，確認不同 Web Servers 都能從共用 Session Store 辨識同一位使用者；未帶 Cookie 的 Browser 則會收到 `401 Unauthorized`。完整流程請參考 [006 Stateless Web Tier 架構決策](./decisions/006-stateless-web-tier.md)。
 
+## 執行 Multi-Data Center 模擬程式
+
+```powershell
+python src/stage07_multi_data_center.py
+```
+
+Stage 07 會啟動 Taipei 與 Virginia Data Centers，每個 Data Center 都有自己的 Load Balancer 與兩台 Web Servers。Asia 與 US Browsers 會透過 GeoDNS 取得各自偏好的 Data Center；Taipei 故障後，Asia Browser 會先因尚未過期的 DNS Cache 收到 `503 Service Unavailable`，等待 TTL 到期後再取得 Virginia IP 並完成 Failover。兩個 Data Centers 暫時共用 Session Store，因此切換後原本的登入 Session 仍能命中。完整流程請參考 [007 Multi-Data Center 架構決策](./decisions/007-multi-data-center.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
@@ -375,6 +388,8 @@ Stage 06 保留 Stage 05 的完整架構並加入 Shared Session Store。程式�
 - [CDN Caching 筆記](./notes/10-cdn-caching.md)
 - [Stateless Web Tier 筆記](./notes/11-stateless-web-tier.md)
 - [Cookie 與 Server-Side Session 筆記](./notes/12-cookie-and-server-side-session.md)
+- [Multi-Data Center 筆記](./notes/13-multi-data-center.md)
+- [GeoDNS 與 DNS Failover 筆記](./notes/14-geodns-and-dns-failover.md)
 - [網域註冊與 IP 對應](./questions/01-domain-registration.md)
 - [`www` 與 `api` 子網域的用途](./questions/02-www-and-api.md)
 - [除了 Round Robin，Load Balancer 如何分配伺服器？](./questions/03-load-balancing-algorithms.md)
@@ -392,9 +407,13 @@ Stage 06 保留 Stage 05 的完整架構並加入 Shared Session Store。程式�
 - [Endpoint 是什麼？](./questions/15-what-is-an-endpoint.md)
 - [Session Store、Database 與 Cache 是同一個東西嗎？](./questions/16-session-store-vs-database-and-cache.md)
 - [Session 應該保存什麼，容量會不會用完？](./questions/17-what-belongs-in-a-session.md)
+- [GeoDNS 和 Reverse Proxy 功能接近，所以只需要選一個嗎？](./questions/18-geodns-vs-reverse-proxy.md)
+- [Load Balancer 和 Reverse Proxy 有什麼關係？](./questions/19-load-balancer-vs-reverse-proxy.md)
+- [多個 Data Centers 如何共享 Session、Cache 與 Database？](./questions/20-how-is-data-shared-across-data-centers.md)
 - [單一伺服器架構決策](./decisions/001-single-server.md)
 - [Load Balancer 架構決策](./decisions/002-load-balancer.md)
 - [Database Replication 架構決策](./decisions/003-database-replication.md)
 - [Shared Cache 架構決策](./decisions/004-cache.md)
 - [CDN 架構決策](./decisions/005-cdn.md)
 - [Stateless Web Tier 架構決策](./decisions/006-stateless-web-tier.md)
+- [Multi-Data Center 架構決策](./decisions/007-multi-data-center.md)

@@ -12,6 +12,9 @@
 | A Record | 將名稱對應至 IPv4 位址的 DNS Record。 |
 | CNAME Record | 將一個名稱設定為另一個名稱之別名的 DNS Record。 |
 | TTL | DNS 紀錄可以被快取的時間長度。 |
+| GeoDNS | Authoritative DNS 根據查詢來源區域、服務健康狀態或路由政策回傳不同 DNS Answer 的功能。 |
+| DNS Cache | Browser、Operating System 或 DNS Resolver 暫時保存 DNS Answer，直到 TTL 到期。 |
+| DNS-Based Routing | 透過回傳不同 IP Address，將新的 Client Connection 導向不同 Region 或 Data Center 的路由方式。 |
 | IP Address | 用來識別網路介面並協助路由封包的位址。 |
 | Public IP | 可以在公開網際網路上路由的 IP Address；Stage 02 的 Client 透過 Load Balancer 的 Public IP 進入系統。 |
 | Private IP | 用於私有網路內部通訊、不直接在公開網際網路上路由的 IP Address。 |
@@ -39,10 +42,19 @@
 | Backend | 位於 Load Balancer 後方，實際處理 Request 的 Server。 |
 | Server Pool / Target Group | 註冊在 Load Balancer 中、可供選擇的一組 Backends。不同產品使用的名稱可能不同。 |
 | Reverse Proxy | 代表後方 Servers 接收 Client Request、轉送 Request，再將 Response 傳回 Client 的代理元件。 |
+| Global Reverse Proxy | 接收實際 Client Connection 或 HTTP Request，再選擇 Region、Data Center 或 Backend 的全球代理層。 |
 | Health Check | Load Balancer 用來判斷 Backend 是否能繼續接收流量的檢查。 |
 | Round Robin | 依序輪流選擇健康 Backend 的負載分配方式。 |
 | Horizontal Scaling | 透過增加 Server 數量擴充系統的整體處理能力。 |
 | Single Point of Failure | 某個單一元件故障時，會導致整體服務無法運作的設計風險。 |
+| Data Center | 容納運算、網路與儲存設備的實體設施；在系統架構中通常代表一組能獨立承接服務流量的資源。 |
+| Multi-Data Center | 將服務部署到多個 Data Centers，以降低區域故障風險並改善不同地區 Client 的存取延遲。 |
+| Region | Cloud Provider 劃分的地理區域，通常包含一個或多個彼此隔離的 Availability Zones。 |
+| Availability Zone | Region 內具有獨立電力、網路或其他故障範圍的一組基礎設施。 |
+| Failover | 主要服務或目的地失效時，將流量或工作切換至健康備援服務的過程。 |
+| Active-Active | 多個 Data Centers 平時都承接正式流量的部署模式。 |
+| Active-Passive | 主要 Data Center 平時承接流量，備援 Data Center 在故障時接手的部署模式。 |
+| Global Traffic Management | 根據區域、延遲、健康狀態或容量，在多個全球 Endpoints 之間選擇流量目的地。 |
 | Web Tier | 位於 Load Balancer 後方、負責處理 HTTP Request 與應用邏輯的一組 Web Servers。 |
 | Stateful Server | 將跨 Request 的 Client 專屬狀態保存在單一 Server 本機，因此後續 Request 可能必須回到相同 Server。 |
 | Stateless Server | 不將 Client 專屬狀態只保存在單一 Server 本機，因此 Request 可以交由不同 Server 處理。 |
