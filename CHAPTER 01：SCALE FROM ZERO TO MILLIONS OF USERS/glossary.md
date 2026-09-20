@@ -87,5 +87,14 @@
 | Dynamic Content | 根據使用者、時間、Request 或目前資料即時產生的內容。 |
 | Cache Key | Cache 用來識別不同內容的 Key；CDN 常依 Host、Path、Query String 與部分 Headers 組成。 |
 | Cache Bypass | CDN 不使用且通常不保存這次 Request 的 Cache，而是直接將 Request 轉送至 Origin。 |
+| Message Queue | 在 Producer 與 Consumer 之間暫存及傳遞工作或事件，讓 Consumer 可以非同步處理的元件。 |
+| Message Broker | 接收、保存、路由及投遞 Message 的服務。 |
+| Message | Producer 傳給 Consumer 的資料單位，通常包含 Message ID、類型與 Payload。 |
+| Producer | 建立並發布 Message 至 Message Broker 的程式或服務。 |
+| Consumer | 從 Queue 取得 Message 並執行處理邏輯的程式或服務。 |
+| Worker | 執行背景工作的 Process 或 Server；在 Message Queue 架構中通常扮演 Consumer。 |
+| Asynchronous Processing | Producer 提交工作後不等待工作全部完成，由其他元件稍後處理的執行方式。 |
+| Event | 描述已經發生之事實的 Message，例如 `OrderCreated`。 |
+| Subscription | Consumer 對某類 Message 的獨立接收管道與處理進度。 |
 
 [回到 Chapter 01](./README.md)
