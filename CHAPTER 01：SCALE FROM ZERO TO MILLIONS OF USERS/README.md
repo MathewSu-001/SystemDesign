@@ -16,6 +16,8 @@ Stage 05：CDN Edge Cache
 Stage 06：Stateless Web Tier + Shared Session Store
     ↓
 Stage 07：Multi-Data Center + GeoDNS Failover
+    ↓
+Stage 08：Message Queue + Background Workers
 ```
 
 | Stage | 程式 | 架構決策 | 狀態 |
@@ -27,10 +29,11 @@ Stage 07：Multi-Data Center + GeoDNS Failover
 | 05 | [`stage05_cdn.py`](./src/stage05_cdn.py) | [`005-cdn.md`](./decisions/005-cdn.md) | 已完成 |
 | 06 | [`stage06_stateless_web_tier.py`](./src/stage06_stateless_web_tier.py) | [`006-stateless-web-tier.md`](./decisions/006-stateless-web-tier.md) | 已完成 |
 | 07 | [`stage07_multi_data_center.py`](./src/stage07_multi_data_center.py) | [`007-multi-data-center.md`](./decisions/007-multi-data-center.md) | 已完成 |
+| 08 | [`stage08_message_queue.py`](./src/stage08_message_queue.py) | [`008-message-queue.md`](./decisions/008-message-queue.md) | 已完成 |
 
 ## 目標
 
-本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache、CDN、Shared Session Store 與多資料中心，觀察系統如何擴充並理解一致性、狀態管理及跨區域 Failover 的取捨。
+本章從最簡單的單一 Web Server 開始，逐步加入 Load Balancer、多台 Web Servers、Database Replication、Shared Cache、CDN、Shared Session Store、多資料中心與 Message Queue，觀察系統如何擴充並理解一致性、狀態管理、跨區域 Failover 及非同步處理的取捨。
 
 Stage 01 的目標是理解使用者輸入網域後，如何經過 DNS、TCP 與 HTTP，直接從單一 Web Server 取得 HTML。
 
@@ -43,6 +46,8 @@ Stage 05 在 Browser 與 Origin 之間加入 CDN Edge Cache，讓靜態內容的
 Stage 06 將登入 Session 放入所有 Web Servers 共用的 Session Store，Browser 只透過 Cookie 攜帶隨機 Session ID。登入與後續 Request 即使分別由不同 Web Servers 處理，仍能取得同一個登入狀態，讓 Web Tier 不需要依賴 Sticky Session。
 
 Stage 07 建立 Taipei 與 Virginia 兩個 Data Centers，使用 GeoDNS 依 Client Region 回傳偏好的健康 Data Center IP，再由該 Data Center 的 Load Balancer 選擇 Web Server。程式也會展示 Browser DNS Cache 尚未到期時仍連向故障 Data Center，以及 TTL 到期後重新查詢並完成 Failover。
+
+Stage 08 以購物系統下單流程加入 Message Broker 與 Background Workers。Web Server 同步將訂單寫入 Database、使 Cache 失效，再發布 `OrderCreated`；Email、Inventory 與 Analytics Consumers 在背景處理，並展示 ACK、Retry、Dead Letter Queue 與重複投遞下的冪等處理。
 
 ## 系統架構
 
@@ -373,6 +378,14 @@ python src/stage07_multi_data_center.py
 
 Stage 07 會啟動 Taipei 與 Virginia Data Centers，每個 Data Center 都有自己的 Load Balancer 與兩台 Web Servers。Asia 與 US Browsers 會透過 GeoDNS 取得各自偏好的 Data Center；Taipei 故障後，Asia Browser 會先因尚未過期的 DNS Cache 收到 `503 Service Unavailable`，等待 TTL 到期後再取得 Virginia IP 並完成 Failover。兩個 Data Centers 暫時共用 Session Store，因此切換後原本的登入 Session 仍能命中。完整流程請參考 [007 Multi-Data Center 架構決策](./decisions/007-multi-data-center.md)。
 
+## 執行 Message Queue 模擬程式
+
+```powershell
+python src/stage08_message_queue.py
+```
+
+Stage 08 會由兩台 Web Servers 建立訂單，將正式資料寫入 Database、使 Order Cache 失效，再發布 `OrderCreated` 至 Message Broker。Email、Inventory 與 Analytics 各自從 Subscription 消費事件；程式會展示 Inventory 暫時失敗後 Retry 成功、Analytics ACK 遺失後以 Message ID 避免重複副作用，以及無效 Email 超過重試上限後進入 DLQ。完整流程請參考 [008 Message Queue 架構決策](./decisions/008-message-queue.md)。
+
 ## 延伸閱讀
 
 - [術語表](./glossary.md)
@@ -390,6 +403,8 @@ Stage 07 會啟動 Taipei 與 Virginia Data Centers，每個 Data Center 都有�
 - [Cookie 與 Server-Side Session 筆記](./notes/12-cookie-and-server-side-session.md)
 - [Multi-Data Center 筆記](./notes/13-multi-data-center.md)
 - [GeoDNS 與 DNS Failover 筆記](./notes/14-geodns-and-dns-failover.md)
+- [Message Queue 筆記](./notes/15-message-queue.md)
+- [Message Delivery Semantics 筆記](./notes/16-message-delivery-semantics.md)
 - [網域註冊與 IP 對應](./questions/01-domain-registration.md)
 - [`www` 與 `api` 子網域的用途](./questions/02-www-and-api.md)
 - [除了 Round Robin，Load Balancer 如何分配伺服器？](./questions/03-load-balancing-algorithms.md)
@@ -410,6 +425,8 @@ Stage 07 會啟動 Taipei 與 Virginia Data Centers，每個 Data Center 都有�
 - [GeoDNS 和 Reverse Proxy 功能接近，所以只需要選一個嗎？](./questions/18-geodns-vs-reverse-proxy.md)
 - [Load Balancer 和 Reverse Proxy 有什麼關係？](./questions/19-load-balancer-vs-reverse-proxy.md)
 - [多個 Data Centers 如何共享 Session、Cache 與 Database？](./questions/20-how-is-data-shared-across-data-centers.md)
+- [Message Queue、Database 與 Cache 有什麼不同？](./questions/21-message-queue-vs-database-and-cache.md)
+- [ACK 與 NACK 是什麼？](./questions/22-what-are-ack-and-nack.md)
 - [單一伺服器架構決策](./decisions/001-single-server.md)
 - [Load Balancer 架構決策](./decisions/002-load-balancer.md)
 - [Database Replication 架構決策](./decisions/003-database-replication.md)
@@ -417,3 +434,4 @@ Stage 07 會啟動 Taipei 與 Virginia Data Centers，每個 Data Center 都有�
 - [CDN 架構決策](./decisions/005-cdn.md)
 - [Stateless Web Tier 架構決策](./decisions/006-stateless-web-tier.md)
 - [Multi-Data Center 架構決策](./decisions/007-multi-data-center.md)
+- [Message Queue 架構決策](./decisions/008-message-queue.md)
